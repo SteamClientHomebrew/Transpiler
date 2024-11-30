@@ -66,81 +66,59 @@ function InitializePlugins() {
 	}
 }
 
+const ContructFunctions = (parts: any) => { return parts.join('\n'); }
+
 function InsertMillennium(props: TranspilerProps) 
 {
-    const ContructFunctions = (parts: any) => { return parts.join('\n'); }
-
     const generateBundle = (_: unknown, bundle: any) => {	
-
-		for (const fileName in bundle) 
-		{
-			if (bundle[fileName].type != 'chunk') {
-				continue 
-			}
+		for (const fileName in bundle) {
+			if (bundle[fileName].type != 'chunk') continue 
+			
             Logger.Info("Injecting Millennium shims into module... " + chalk.green.bold("okay"))
 
 			bundle[fileName].code = ContructFunctions([    
 				`const pluginName = "${props.strPluginInternalName}";`,
-                // insert the bootstrap function and call it
 				InitializePlugins.toString(), InitializePlugins.name + "()",
-				WrappedCallServerMethod, 
-                WrappedCallable, 
-                bundle[fileName].code,
+				WrappedCallServerMethod, WrappedCallable, bundle[fileName].code,
 				ExecutePluginModule.toString(), ExecutePluginModule.name + "()"
 			])
 		}
     }
 
-    return {
-        name: 'add-plugin-main', generateBundle
-    };
+    return { name: String(), generateBundle };
 }
 
 function InsertWebkitMillennium(props: TranspilerProps) 
 {
-    const ContructFunctions = (parts: any) => { return parts.join('\n'); }
-
     const generateBundle = (_: unknown, bundle: any) => {	
-
-		for (const fileName in bundle) 
-		{
-			if (bundle[fileName].type != 'chunk') {
-				continue 
-			}
+		for (const fileName in bundle) {
+			if (bundle[fileName].type != 'chunk') continue 
+			
             Logger.Info("Injecting Millennium shims into webkit module... " + chalk.green.bold("okay"))
 
 			bundle[fileName].code = ContructFunctions([    
-                // define the plugin name at the top of the bundle, so it can be used in wrapped functions
 				`const pluginName = "${props.strPluginInternalName}";`,
-                // insert the bootstrap function and call it
                 InitializePlugins.toString(), InitializePlugins.name + "()",
-                // TODO
 				WrappedCallServerMethod, WrappedCallable, bundle[fileName].code,
 				ExecuteWebkitModule.toString(), ExecuteWebkitModule.name + "()"
 			])
 		}
     }
 
-    return {
-        name: 'add-plugin-main', generateBundle
-    };
+    return { name: String(), generateBundle };
 }
 
 function GetPluginComponents(props: TranspilerProps) {
 	const pluginList = [
-        /**
-         * @brief resolve millennium, edit the exported bundle to work with millennium
-         */
         InsertMillennium(props),
 		typescript(), nodeResolve(), commonjs(), json(),
 		replace({
-			preventAssignment: true,
-            'process.env.NODE_ENV': JSON.stringify('production'),
-			// replace callServerMethod with wrapped replacement function. 
-			'Millennium.callServerMethod': `__call_server_method__`,
-            'client.callable': `__wrapped_callable__`,
 			delimiters: ['', ''],
-			'client.pluginSelf': 'window.PLUGIN_LIST[pluginName]',
+			preventAssignment: true,
+            'process.env.NODE_ENV'        : JSON.stringify('production'),
+			'Millennium.callServerMethod' : `__call_server_method__`,
+            'client.callable'             : `__wrapped_callable__`,
+			'client.pluginSelf'           : 'window.PLUGIN_LIST[pluginName]',
             'client.Millennium.exposeObj(': 'client.Millennium.exposeObj(exports, '
 		}),
 	]
@@ -155,28 +133,21 @@ function GetWebkitPluginComponents(props: TranspilerProps) {
 	const pluginList = [
         InsertWebkitMillennium(props), typescript(), nodeResolve(), commonjs(), json(),
         replace({
+			delimiters: ['', ''],
 			preventAssignment: true,
-			// replace callServerMethod with wrapped replacement function. 
 			'Millennium.callServerMethod': `__call_server_method__`,
             'client.callable': `__wrapped_callable__`,
-			delimiters: ['', ''],
 		}),
 	]
 	
-	if (props.bTersePlugin) {
-		pluginList.push(terser())
-	}
+    props.bTersePlugin && pluginList.push(terser())
 	return pluginList
 }
 
 const GetFrontEndDirectory = () => {
     const pluginJsonPath = './plugin.json';
-
     try {
-        const pluginJson = JSON.parse(fs.readFileSync(pluginJsonPath, 'utf8'));
-        const frontendDirectory = pluginJson?.frontend;
-
-        return frontendDirectory ? frontendDirectory : "frontend";
+        return JSON.parse(fs.readFileSync(pluginJsonPath, 'utf8'))?.frontend ?? "frontend";
     } 
     catch (error) {
         return "frontend";
@@ -189,13 +160,20 @@ export const TranspilerPluginComponent = async (props: TranspilerProps) => {
         input: `./${GetFrontEndDirectory()}/index.tsx`,
         plugins: GetPluginComponents(props),
         context: 'window',
-        external: ['react', 'react-dom', '@steambrew/client'],
+        external: (id) => { 
+            if (id === '@steambrew/webkit') {
+                Logger.Error('The @steambrew/webkit module should not be included in the frontend module, use @steambrew/client instead. Please remove it from the frontend module and try again.')
+                process.exit(1)
+            }
+
+            return id === '@steambrew/client' || id === 'react' || id === 'react-dom'
+        },
         output: {
             name: "millennium_main",
             file: ".millennium/Dist/index.js",
             globals: {
-                react: "window.SP_REACT",
-                "react-dom": "window.SP_REACTDOM",
+                "react"            : "window.SP_REACT",
+                "react-dom"        : "window.SP_REACTDOM",
                 "@steambrew/client": "window.MILLENNIUM_API"
             },
             exports: 'named',
@@ -207,34 +185,33 @@ export const TranspilerPluginComponent = async (props: TranspilerProps) => {
         input: `./webkit/index.ts`,
         plugins: GetWebkitPluginComponents(props),
         context: 'window',
-        external: ['@steambrew/client'],
+        external: (id) => {
+            if (id === '@steambrew/client') {
+              Logger.Error('The @steambrew/client module should not be included in the webkit module, use @steambrew/webkit instead. Please remove it from the webkit module and try again.')
+              process.exit(1)
+            }
+
+            return id === '@steambrew/webkit'
+        },
         output: {
             name: "millennium_main",
             file: ".millennium/Dist/webkit.js",
             exports: 'named',
             format: 'iife',
             globals: {
-                "@steambrew/client": "window.MILLENNIUM_API"
+                "@steambrew/webkit": "window.MILLENNIUM_API"
             },
         }
     }
 
     Logger.Info("Starting build; this may take a few moments...")
-    // Load the Rollup configuration file
-    try {
-        const bundle = await rollup(frontendRollupConfig);
-        const outputOptions = frontendRollupConfig.output as OutputOptions;
-    
-        await bundle.write(outputOptions);
 
-        // check if the webkit file exists
+    try {
+        await (await rollup(frontendRollupConfig)).write(frontendRollupConfig.output as OutputOptions);
+
         if (fs.existsSync(`./webkit/index.ts`)) {
             Logger.Info("Compiling webkit module...")
-
-            const bundle1 = await rollup(webkitRollupConfig);
-            const outputOptions1 = webkitRollupConfig.output as OutputOptions;
-        
-            await bundle1.write(outputOptions1);
+            await (await rollup(webkitRollupConfig)).write(webkitRollupConfig.output as OutputOptions);
         }
         
         Logger.Info('Build succeeded!', Number((performance.now() - global.PerfStartTime).toFixed(3)), 'ms elapsed.')

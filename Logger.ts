@@ -3,20 +3,20 @@ import chalk from 'chalk'
 const Logger = {
 
     Info: (...LogMessage: any) => {
-        console.log(chalk.magenta.bold("[+]"), ...LogMessage)
+        console.log(chalk.magenta.bold("++"), ...LogMessage)
     },
 
     Warn: (...LogMessage: any) => {
-        console.log(chalk.yellow.bold("[*]"), ...LogMessage)
+        console.log(chalk.yellow.bold("**"), ...LogMessage)
     },
 
     Error: (...LogMessage: any) => {
-        console.log(chalk.red.bold("[-]"), ...LogMessage)
+        console.log(chalk.red.bold("!!"), ...LogMessage)
     },
 
     Tree: (strTitle: string, LogObject: any) => { 
 
-        console.log(chalk.magenta.bold("[┬]"), strTitle);
+        console.log(chalk.magenta.bold("++"), strTitle);
 
         const isLocalPath = (strTestPath: string): boolean => {
             // Regular expression to match common file path patterns
@@ -29,7 +29,7 @@ const Logger = {
 
         for (const [index, [key, value]] of entries.entries()) {
 
-            const connector = index === totalEntries - 1 ? "└" : "├"
+            const connector = index === totalEntries - 1 ? "    " : "    "
             let color = chalk.white
 
             switch (typeof value) {

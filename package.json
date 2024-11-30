@@ -4,8 +4,14 @@
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
+  "bin": {
+    "millennium-ttc": "dist/index.js"
+  },
   "scripts": {
     "build": "rollup -c"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [],
   "author": "",

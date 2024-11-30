@@ -10,7 +10,7 @@ import { CheckForUpdates } from "./VersionMon"
 import { ValidatePlugin } from './Linter'
 import { TranspilerPluginComponent, TranspilerProps } from './Compiler'
 import { performance } from 'perf_hooks';
-import { Logger } from './Logger'
+// import { Logger } from './Logger'
 
 declare global {
     var PerfStartTime: number;
@@ -25,11 +25,11 @@ const StartCompilerModule = () => {
     const parameters   = ValidateParameters( process.argv.slice(2) );
     const bTersePlugin = parameters.type == BuildType.ProdBuild
 
-    Logger.Tree("Transpiler config: ", {
-        target: parameters.targetPlugin,
-        build: BuildType[parameters.type],
-        minify: bTersePlugin
-    })
+    // Logger.Tree("Transpiler config: ", {
+    //     target: parameters.targetPlugin,
+    //     build: BuildType[parameters.type],
+    //     minify: bTersePlugin
+    // })
 
     ValidatePlugin(parameters.targetPlugin).then((json: any) => {
 
