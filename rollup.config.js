@@ -23,6 +23,7 @@ export default {
     "@rollup/plugin-node-resolve",
     "rollup-plugin-import-css",
     "@rollup/plugin-terser",
+    "@rollup/plugin-babel",
     "perf_hooks",
   ]
 };

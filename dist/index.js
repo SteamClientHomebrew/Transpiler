@@ -9,8 +9,9 @@ import json from '@rollup/plugin-json';
 import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
-import { nodeResolve } from '@rollup/plugin-node-resolve';
+import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
+import babel from '@rollup/plugin-babel';
 import { performance as performance$1 } from 'perf_hooks';
 
 const Logger = {
@@ -237,7 +238,10 @@ function InsertWebkitMillennium(props) {
 function GetPluginComponents(props) {
     const pluginList = [
         InsertMillennium(props),
-        typescript(), nodeResolve(), commonjs(), json(),
+        typescript({
+            tsconfig: `./${GetFrontEndDirectory()}/tsconfig.json`
+        }),
+        resolve(), commonjs(), json(),
         replace({
             delimiters: ['', ''],
             preventAssignment: true,
@@ -255,13 +259,21 @@ function GetPluginComponents(props) {
 }
 function GetWebkitPluginComponents(props) {
     const pluginList = [
-        InsertWebkitMillennium(props), typescript(), nodeResolve(), commonjs(), json(),
+        InsertWebkitMillennium(props),
+        typescript({
+            tsconfig: './webkit/tsconfig.json'
+        }),
+        resolve(), commonjs(), json(),
         replace({
             delimiters: ['', ''],
             preventAssignment: true,
             'Millennium.callServerMethod': `__call_server_method__`,
-            'client.callable': `__wrapped_callable__`,
+            'webkit.callable': `__wrapped_callable__`,
         }),
+        babel({
+            presets: ['@babel/preset-env', '@babel/preset-react'],
+            babelHelpers: 'bundled',
+        })
     ];
     props.bTersePlugin && pluginList.push(terser());
     return pluginList;
@@ -300,7 +312,7 @@ const TranspilerPluginComponent = async (props) => {
         }
     };
     const webkitRollupConfig = {
-        input: `./webkit/index.ts`,
+        input: `./webkit/index.tsx`,
         plugins: GetWebkitPluginComponents(props),
         context: 'window',
         external: (id) => {
@@ -323,7 +335,7 @@ const TranspilerPluginComponent = async (props) => {
     Logger.Info("Starting build; this may take a few moments...");
     try {
         await (await rollup(frontendRollupConfig)).write(frontendRollupConfig.output);
-        if (fs.existsSync(`./webkit/index.ts`)) {
+        if (fs.existsSync(`./webkit/index.tsx`)) {
             Logger.Info("Compiling webkit module...");
             await (await rollup(webkitRollupConfig)).write(webkitRollupConfig.output);
         }
@@ -366,6 +378,11 @@ const StartCompilerModule = () => {
 };
 const Initialize = () => {
     global.PerfStartTime = performance$1.now();
+    // Check for --no-update flag
+    if (process.argv.includes("--no-update")) {
+        StartCompilerModule();
+        return;
+    }
     CheckModuleUpdates().then((needsUpdate) => {
         needsUpdate ? process.exit() : StartCompilerModule();
     });

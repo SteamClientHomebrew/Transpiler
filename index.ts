@@ -52,6 +52,12 @@ const StartCompilerModule = () => {
 const Initialize = () => {
     global.PerfStartTime = performance.now();
 
+    // Check for --no-update flag
+    if (process.argv.includes("--no-update")) {
+        StartCompilerModule()
+        return
+    }
+
     CheckModuleUpdates().then((needsUpdate: boolean) => {
         needsUpdate ? process.exit() : StartCompilerModule()
     })
