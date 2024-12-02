@@ -236,10 +236,14 @@ function InsertWebkitMillennium(props) {
     return { name: String(), generateBundle };
 }
 function GetPluginComponents(props) {
+    let tsConfigPath = `./${GetFrontEndDirectory()}/tsconfig.json`;
+    if (!fs.existsSync(tsConfigPath)) {
+        tsConfigPath = './tsconfig.json';
+    }
     const pluginList = [
         InsertMillennium(props),
         typescript({
-            tsconfig: `./${GetFrontEndDirectory()}/tsconfig.json`
+            tsconfig: tsConfigPath
         }),
         resolve(), commonjs(), json(),
         replace({
@@ -311,32 +315,32 @@ const TranspilerPluginComponent = async (props) => {
             format: 'iife'
         }
     };
-    const webkitRollupConfig = {
-        input: `./webkit/index.tsx`,
-        plugins: GetWebkitPluginComponents(props),
-        context: 'window',
-        external: (id) => {
-            if (id === '@steambrew/client') {
-                Logger.Error('The @steambrew/client module should not be included in the webkit module, use @steambrew/webkit instead. Please remove it from the webkit module and try again.');
-                process.exit(1);
-            }
-            return id === '@steambrew/webkit';
-        },
-        output: {
-            name: "millennium_main",
-            file: ".millennium/Dist/webkit.js",
-            exports: 'named',
-            format: 'iife',
-            globals: {
-                "@steambrew/webkit": "window.MILLENNIUM_API"
-            },
-        }
-    };
     Logger.Info("Starting build; this may take a few moments...");
     try {
         await (await rollup(frontendRollupConfig)).write(frontendRollupConfig.output);
         if (fs.existsSync(`./webkit/index.tsx`)) {
             Logger.Info("Compiling webkit module...");
+            const webkitRollupConfig = {
+                input: `./webkit/index.tsx`,
+                plugins: GetWebkitPluginComponents(props),
+                context: 'window',
+                external: (id) => {
+                    if (id === '@steambrew/client') {
+                        Logger.Error('The @steambrew/client module should not be included in the webkit module, use @steambrew/webkit instead. Please remove it from the webkit module and try again.');
+                        process.exit(1);
+                    }
+                    return id === '@steambrew/webkit';
+                },
+                output: {
+                    name: "millennium_main",
+                    file: ".millennium/Dist/webkit.js",
+                    exports: 'named',
+                    format: 'iife',
+                    globals: {
+                        "@steambrew/webkit": "window.MILLENNIUM_API"
+                    },
+                }
+            };
             await (await rollup(webkitRollupConfig)).write(webkitRollupConfig.output);
         }
         Logger.Info('Build succeeded!', Number((performance.now() - global.PerfStartTime).toFixed(3)), 'ms elapsed.');
