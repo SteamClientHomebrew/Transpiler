@@ -130,7 +130,8 @@ function GetPluginComponents(props: TranspilerProps) {
 			'Millennium.callServerMethod' : `__call_server_method__`,
             'client.callable'             : `__wrapped_callable__`,
 			'client.pluginSelf'           : 'window.PLUGIN_LIST[pluginName]',
-            'client.Millennium.exposeObj(': 'client.Millennium.exposeObj(exports, '
+            'client.Millennium.exposeObj(': 'client.Millennium.exposeObj(exports, ',
+            'client.Millennium.exposeSettings(': 'client.Millennium.exposeSettings(exports, ',
 		}),
 	]
 	
@@ -152,6 +153,7 @@ function GetWebkitPluginComponents(props: TranspilerProps) {
 			preventAssignment: true,
 			'Millennium.callServerMethod': `__call_server_method__`,
             'webkit.callable': `__wrapped_callable__`,
+            'webkit.Millennium.getSettings()': 'webkit.Millennium.getSettings(pluginName)',
 		}),
         babel({
             presets: ['@babel/preset-env', '@babel/preset-react'],
