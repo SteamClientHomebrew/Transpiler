@@ -12,6 +12,8 @@ import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import babel from '@rollup/plugin-babel';
+import injectProcessEnv from 'rollup-plugin-inject-process-env';
+import dotenv from 'dotenv';
 import { performance as performance$1 } from 'perf_hooks';
 
 const Logger = {
@@ -22,7 +24,7 @@ const Logger = {
         console.log(chalk.yellow.bold("**"), ...LogMessage);
     },
     Error: (...LogMessage) => {
-        console.log(chalk.red.bold("!!"), ...LogMessage);
+        console.error(chalk.red.bold("!!"), ...LogMessage);
     },
     Tree: (strTitle, LogObject) => {
         console.log(chalk.magenta.bold("++"), strTitle);
@@ -164,6 +166,14 @@ const ValidatePlugin = (target) => {
     });
 };
 
+const envConfig = dotenv.config().parsed || {};
+if (envConfig) {
+    Logger.Info("Injecting environment variables...");
+}
+const envVars = Object.keys(envConfig).reduce((acc, key) => {
+    acc[`process.env.${key}`] = JSON.stringify(envConfig[key]);
+    return acc;
+}, {});
 const WrappedCallServerMethod = "const __call_server_method__ = (methodName, kwargs) => Millennium.callServerMethod(pluginName, methodName, kwargs)";
 const WrappedCallable = "const __wrapped_callable__ = (route) => MILLENNIUM_API.callable(__call_server_method__, route)";
 /**
@@ -246,6 +256,7 @@ function GetPluginComponents(props) {
             tsconfig: tsConfigPath
         }),
         resolve(), commonjs(), json(),
+        injectProcessEnv(envVars),
         replace({
             delimiters: ['', ''],
             preventAssignment: true,
@@ -268,6 +279,7 @@ function GetWebkitPluginComponents(props) {
             tsconfig: './webkit/tsconfig.json'
         }),
         resolve(), commonjs(), json(),
+        injectProcessEnv(envVars),
         replace({
             delimiters: ['', ''],
             preventAssignment: true,
@@ -347,6 +359,7 @@ const TranspilerPluginComponent = async (props) => {
     }
     catch (exception) {
         Logger.Error('Build failed!', exception);
+        process.exit(1);
     }
 };
 
@@ -361,11 +374,11 @@ const CheckModuleUpdates = async () => {
 const StartCompilerModule = () => {
     const parameters = ValidateParameters(process.argv.slice(2));
     const bTersePlugin = parameters.type == BuildType.ProdBuild;
-    // Logger.Tree("Transpiler config: ", {
-    //     target: parameters.targetPlugin,
-    //     build: BuildType[parameters.type],
-    //     minify: bTersePlugin
-    // })
+    Logger.Tree("Transpiler config: ", {
+        target: parameters.targetPlugin,
+        build: BuildType[parameters.type],
+        minify: bTersePlugin
+    });
     ValidatePlugin(parameters.targetPlugin).then((json) => {
         const props = {
             bTersePlugin: bTersePlugin,

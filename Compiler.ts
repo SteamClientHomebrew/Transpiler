@@ -11,6 +11,20 @@ import chalk from 'chalk'
 import { Logger } from "./Logger";
 import fs from 'fs';
 
+import injectProcessEnv from 'rollup-plugin-inject-process-env';
+import dotenv from 'dotenv';
+
+const envConfig = dotenv.config().parsed || {};
+
+if (envConfig) {
+    Logger.Info("Injecting environment variables...")
+}
+
+const envVars = Object.keys(envConfig).reduce((acc: any, key) => {
+  acc[`process.env.${key}`] = JSON.stringify(envConfig[key]);
+  return acc;
+}, {});
+
 declare global {
     interface Window {
         PLUGIN_LIST: any
@@ -123,6 +137,7 @@ function GetPluginComponents(props: TranspilerProps) {
             tsconfig: tsConfigPath
         }), 
         resolve(), commonjs(), json(),
+        injectProcessEnv(envVars),
 		replace({
 			delimiters: ['', ''],
 			preventAssignment: true,
@@ -147,6 +162,7 @@ function GetWebkitPluginComponents(props: TranspilerProps) {
             tsconfig: './webkit/tsconfig.json'
         }), 
         resolve(), commonjs(), json(),
+        injectProcessEnv(envVars),
         replace({
 			delimiters: ['', ''],
 			preventAssignment: true,
@@ -238,5 +254,6 @@ export const TranspilerPluginComponent = async (props: TranspilerProps) => {
     }
     catch (exception) {
         Logger.Error('Build failed!', exception)
+        process.exit(1)
     }
 }

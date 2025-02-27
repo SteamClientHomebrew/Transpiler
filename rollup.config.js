@@ -24,6 +24,8 @@ export default {
     "rollup-plugin-import-css",
     "@rollup/plugin-terser",
     "@rollup/plugin-babel",
+    "rollup-plugin-inject-process-env",
+    "dotenv",
     "perf_hooks",
   ]
 };

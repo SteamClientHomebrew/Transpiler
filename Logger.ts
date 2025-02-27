@@ -11,7 +11,7 @@ const Logger = {
     },
 
     Error: (...LogMessage: any) => {
-        console.log(chalk.red.bold("!!"), ...LogMessage)
+        console.error(chalk.red.bold("!!"), ...LogMessage)
     },
 
     Tree: (strTitle: string, LogObject: any) => { 
