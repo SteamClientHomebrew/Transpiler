@@ -59,9 +59,7 @@ const Initialize = () => {
         return
     }
 
-    CheckModuleUpdates().then((needsUpdate: boolean) => {
-        needsUpdate ? process.exit() : StartCompilerModule()
-    })
+    CheckModuleUpdates().then(StartCompilerModule)
 }
 
 Initialize();
