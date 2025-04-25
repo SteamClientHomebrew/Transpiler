@@ -8,7 +8,8 @@
 		"millennium-ttc": "dist/index.js"
 	},
 	"scripts": {
-		"build": "rollup -c"
+		"build": "rollup -c",
+		"prepare": "npm run build"
 	},
 	"publishConfig": {
 		"access": "public"
