@@ -141,11 +141,6 @@ function InitializePlugins() {
 	MillenniumStore.ignoreProxyFlag = false;
 
 	function DelegateToBackend(pluginName: string, name: string, value: any) {
-		console.log(`Delegating ${name} to backend`, value);
-		// print stack trace
-		const stack = new Error().stack?.split('\n').slice(2).join('\n');
-		console.log(stack);
-
 		return MILLENNIUM_BACKEND_IPC.postMessage(IPCType.CallServerMethod, {
 			pluginName,
 			methodName: '__builtins__.__update_settings_value__',

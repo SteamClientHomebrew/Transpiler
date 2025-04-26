@@ -1,6 +1,7 @@
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
+import nodeResolve from '@rollup/plugin-node-resolve';
 
 export default {
 	input: 'index.ts',
@@ -8,7 +9,7 @@ export default {
 	output: {
 		file: 'dist/index.js',
 	},
-	plugins: [commonjs(), typescript(), json()],
+	plugins: [commonjs(), typescript(), json(), nodeResolve()],
 	external: [
 		'chalk',
 		'path',
@@ -27,5 +28,7 @@ export default {
 		'rollup-plugin-inject-process-env',
 		'dotenv',
 		'perf_hooks',
+		'@rollup/pluginutils',
+		'magic-string',
 	],
 };

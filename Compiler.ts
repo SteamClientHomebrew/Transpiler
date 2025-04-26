@@ -14,11 +14,12 @@ import fs from 'fs';
 import injectProcessEnv from 'rollup-plugin-inject-process-env';
 import dotenv from 'dotenv';
 import { ExecutePluginModule, InitializePlugins } from './PluginSetup';
+import constSysfsExpr from './StaticEmbed';
 
 const envConfig = dotenv.config().parsed || {};
 
 if (envConfig) {
-	Logger.Info('Injecting environment variables...');
+	Logger.Info('envVars', 'Processing ' + Object.keys(envConfig).length + ' environment variables... ' + chalk.green.bold('okay'));
 }
 
 const envVars = Object.keys(envConfig).reduce((acc: any, key) => {
@@ -64,7 +65,7 @@ function InsertMillennium(type: ComponentType, props: TranspilerProps) {
 				continue;
 			}
 
-			Logger.Info('Injecting Millennium shims into ' + ComponentType[type] + ' module... ' + chalk.green.bold('okay'));
+			Logger.Info('millenniumAPI', 'Bundling into ' + ComponentType[type] + ' module... ' + chalk.green.bold('okay'));
 
 			bundle[fileName].code = ConstructFunctions([
 				`const MILLENNIUM_IS_CLIENT_MODULE = ${type === ComponentType.Plugin ? 'true' : 'false'};`,
@@ -98,6 +99,7 @@ function GetPluginComponents(props: TranspilerProps) {
 		resolve(),
 		commonjs(),
 		json(),
+		constSysfsExpr(),
 		injectProcessEnv(envVars),
 		replace({
 			delimiters: ['', ''],
@@ -126,6 +128,7 @@ function GetWebkitPluginComponents(props: TranspilerProps) {
 		resolve(),
 		commonjs(),
 		json(),
+		constSysfsExpr(),
 		injectProcessEnv(envVars),
 		replace({
 			delimiters: ['', ''],
@@ -182,14 +185,10 @@ export const TranspilerPluginComponent = async (props: TranspilerProps) => {
 		},
 	};
 
-	Logger.Info('Starting build; this may take a few moments...');
-
 	try {
 		await (await rollup(frontendRollupConfig)).write(frontendRollupConfig.output as OutputOptions);
 
 		if (fs.existsSync(`./webkit/index.tsx`)) {
-			Logger.Info('Compiling webkit module...');
-
 			const webkitRollupConfig: RollupOptions = {
 				input: `./webkit/index.tsx`,
 				plugins: GetWebkitPluginComponents(props),
@@ -218,9 +217,9 @@ export const TranspilerPluginComponent = async (props: TranspilerProps) => {
 			await (await rollup(webkitRollupConfig)).write(webkitRollupConfig.output as OutputOptions);
 		}
 
-		Logger.Info('Build succeeded!', Number((performance.now() - global.PerfStartTime).toFixed(3)), 'ms elapsed.');
+		Logger.Info('build', 'Succeeded passing all tests in', Number((performance.now() - global.PerfStartTime).toFixed(3)), 'ms elapsed.');
 	} catch (exception) {
-		Logger.Error('Build failed!', exception);
+		Logger.Error('error', 'Build failed!', exception);
 		process.exit(1);
 	}
 };
