@@ -30,5 +30,7 @@ export default {
 		'perf_hooks',
 		'@rollup/pluginutils',
 		'magic-string',
+		'rollup-plugin-scss',
+		'sass',
 	],
 };

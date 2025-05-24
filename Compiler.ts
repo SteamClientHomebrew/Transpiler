@@ -3,9 +3,14 @@ import json from '@rollup/plugin-json';
 import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
-import resolve from '@rollup/plugin-node-resolve';
+import resolve, { nodeResolve } from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import babel from '@rollup/plugin-babel';
+import nodePolyfills from 'rollup-plugin-polyfill-node';
+import url from '@rollup/plugin-url';
+
+import scss from 'rollup-plugin-scss';
+import * as sass from 'sass';
 
 import chalk from 'chalk';
 import { Logger } from './Logger';
@@ -84,20 +89,69 @@ function InsertMillennium(type: ComponentType, props: TranspilerProps) {
 	return { name: String(), generateBundle };
 }
 
-function GetPluginComponents(props: TranspilerProps) {
-	let tsConfigPath = `./${GetFrontEndDirectory()}/tsconfig.json`;
+async function GetCustomUserPlugins() {
+	const ttcConfigPath = new URL(`file://${process.cwd().replace(/\\/g, '/')}/ttc.config.mjs`).href;
+
+	if (fs.existsSync('./ttc.config.mjs')) {
+		const { MillenniumCompilerPlugins } = await import(ttcConfigPath);
+
+		Logger.Info('millenniumAPI', 'Loading custom plugins from ttc.config.mjs... ' + chalk.green.bold('okay'));
+		return MillenniumCompilerPlugins;
+	}
+
+	return [];
+}
+
+async function MergePluginList(plugins: any[]) {
+	const customPlugins = await GetCustomUserPlugins();
+
+	// Filter out custom plugins that have the same name as input plugins
+	const filteredCustomPlugins = customPlugins.filter((customPlugin: any) => !plugins.some((plugin: any) => plugin.name === customPlugin.name));
+
+	// Merge input plugins with the filtered custom plugins
+	return [...plugins, ...filteredCustomPlugins];
+}
+
+async function GetPluginComponents(props: TranspilerProps) {
+	let tsConfigPath = '';
+	const frontendDir = GetFrontEndDirectory();
+
+	if (frontendDir === '.' || frontendDir === './') {
+		tsConfigPath = './tsconfig.json';
+	} else {
+		tsConfigPath = `./${frontendDir}/tsconfig.json`;
+	}
 
 	if (!fs.existsSync(tsConfigPath)) {
 		tsConfigPath = './tsconfig.json';
 	}
 
-	const pluginList = [
+	Logger.Info('millenniumAPI', 'Loading tsconfig from ' + chalk.cyan.bold(tsConfigPath) + '... ' + chalk.green.bold('okay'));
+
+	let pluginList = [
+		url({
+			include: ['**/*.gif', '**/*.webm', '**/*.svg'], // Add all non-JS assets you use
+			limit: 0, // Set to 0 to always copy the file instead of inlining as base64
+			fileName: '[hash][extname]', // Optional: custom output naming
+		}),
 		InsertMillennium(ComponentType.Plugin, props),
+		commonjs(),
+		nodePolyfills(),
+		nodeResolve({
+			browser: true,
+		}),
 		typescript({
+			include: ['**/*.ts', '**/*.tsx', 'src/**/*.ts', 'src/**/*.tsx'],
 			tsconfig: tsConfigPath,
 		}),
+		scss({
+			output: false,
+			outputStyle: 'compressed',
+			sourceMap: false,
+			watch: 'src/styles',
+			sass: sass,
+		}),
 		resolve(),
-		commonjs(),
 		json(),
 		constSysfsExpr(),
 		injectProcessEnv(envVars),
@@ -119,11 +173,17 @@ function GetPluginComponents(props: TranspilerProps) {
 	return pluginList;
 }
 
-function GetWebkitPluginComponents(props: TranspilerProps) {
-	const pluginList = [
+async function GetWebkitPluginComponents(props: TranspilerProps) {
+	let pluginList = [
 		InsertMillennium(ComponentType.Webkit, props),
 		typescript({
 			tsconfig: './webkit/tsconfig.json',
+		}),
+		url({
+			include: ['**/*.mp4', '**/*.webm', '**/*.ogg'],
+			limit: 0, // do NOT inline
+			fileName: '[name][extname]',
+			destDir: 'dist/assets', // or adjust as needed
 		}),
 		resolve(),
 		commonjs(),
@@ -143,6 +203,8 @@ function GetWebkitPluginComponents(props: TranspilerProps) {
 		}),
 	];
 
+	pluginList = await MergePluginList(pluginList);
+
 	props.bTersePlugin && pluginList.push(terser());
 	return pluginList;
 }
@@ -159,7 +221,7 @@ const GetFrontEndDirectory = () => {
 export const TranspilerPluginComponent = async (props: TranspilerProps) => {
 	const frontendRollupConfig: RollupOptions = {
 		input: `./${GetFrontEndDirectory()}/index.tsx`,
-		plugins: GetPluginComponents(props),
+		plugins: await GetPluginComponents(props),
 		context: 'window',
 		external: (id) => {
 			if (id === '@steambrew/webkit') {
@@ -191,7 +253,7 @@ export const TranspilerPluginComponent = async (props: TranspilerProps) => {
 		if (fs.existsSync(`./webkit/index.tsx`)) {
 			const webkitRollupConfig: RollupOptions = {
 				input: `./webkit/index.tsx`,
-				plugins: GetWebkitPluginComponents(props),
+				plugins: await GetWebkitPluginComponents(props),
 				context: 'window',
 				external: (id) => {
 					if (id === '@steambrew/client') {

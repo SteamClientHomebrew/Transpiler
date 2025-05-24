@@ -22,6 +22,10 @@ export const CheckForUpdates = async (): Promise<boolean> => {
 					Logger.Info('versionMon', `@steambrew/ttc@${packageJson.version} is up-to-date!`);
 					resolve(false);
 				}
+			})
+			.catch((exception) => {
+				Logger.Error('Failed to check for updates: ' + exception);
+				resolve(false);
 			});
 	});
 };
