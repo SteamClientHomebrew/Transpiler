@@ -13,13 +13,13 @@ import scss from 'rollup-plugin-scss';
 import * as sass from 'sass';
 
 import chalk from 'chalk';
-import { Logger } from './Logger';
+import { Logger } from './logger';
 import fs from 'fs';
 
 import injectProcessEnv from 'rollup-plugin-inject-process-env';
 import dotenv from 'dotenv';
-import { ExecutePluginModule, InitializePlugins } from './PluginSetup';
-import constSysfsExpr from './StaticEmbed';
+import { ExecutePluginModule, InitializePlugins } from './plugin-api';
+import constSysfsExpr from './static-embed';
 
 const envConfig = dotenv.config().parsed || {};
 

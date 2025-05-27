@@ -2,7 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFile } from 'fs/promises';
 import { dirname } from 'path';
-import { Logger } from './Logger';
+import { Logger } from './logger';
 
 export const CheckForUpdates = async (): Promise<boolean> => {
 	return new Promise<boolean>(async (resolve) => {

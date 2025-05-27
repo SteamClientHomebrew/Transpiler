@@ -5,10 +5,10 @@
  * - typescript transpiler
  * - rollup configurator
  */
-import { BuildType, ValidateParameters } from './Parameters';
-import { CheckForUpdates } from './VersionMon';
-import { ValidatePlugin } from './Linter';
-import { TranspilerPluginComponent, TranspilerProps } from './Compiler';
+import { BuildType, ValidateParameters } from './query-parser';
+import { CheckForUpdates } from './version-control';
+import { ValidatePlugin } from './check-health';
+import { TranspilerPluginComponent, TranspilerProps } from './transpiler';
 import { performance } from 'perf_hooks';
 import chalk from 'chalk';
 // import { Logger } from './Logger'

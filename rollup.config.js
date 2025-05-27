@@ -4,7 +4,7 @@ import json from '@rollup/plugin-json';
 import nodeResolve from '@rollup/plugin-node-resolve';
 
 export default {
-	input: 'index.ts',
+	input: 'src/index.ts',
 	context: 'window',
 	output: {
 		file: 'dist/index.js',
