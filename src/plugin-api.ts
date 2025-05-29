@@ -154,7 +154,7 @@ function InitializePlugins() {
 			await new Promise((resolve) => setTimeout(resolve, 0));
 		}
 
-		MainWindowBrowserManager.m_browser.on('message', (messageId: string, data: string) => {
+		MainWindowBrowserManager?.m_browser?.on('message', (messageId: string, data: string) => {
 			if (messageId !== IPCMessageId) {
 				return;
 			}
@@ -170,7 +170,7 @@ function InitializePlugins() {
 	}
 
 	function WebkitInitializeIPC() {
-		SteamClient.BrowserView.RegisterForMessageFromParent((messageId: string, data: string) => {
+		SteamClient?.BrowserView?.RegisterForMessageFromParent((messageId: string, data: string) => {
 			if (messageId !== IPCMessageId) {
 				return;
 			}
