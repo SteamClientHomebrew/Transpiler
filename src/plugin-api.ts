@@ -10,6 +10,11 @@ declare global {
 		 * It is used to store the plugin settings and the plugin settings parser.
 		 */
 		MILLENNIUM_PLUGIN_SETTINGS_STORE: any;
+		/**
+		 * @description Used to store the settings for the plugin.
+		 * Millennium then renders these in the settings panel.
+		 */
+		MILLENNIUM_SIDEBAR_NAVIGATION_PANELS: any;
 	}
 }
 
@@ -96,7 +101,20 @@ function ExecutePluginModule() {
 		});
 
 		/** Run the rolled up plugins default exported function */
-		PluginModule.default();
+		let pluginProps = PluginModule.default();
+
+		function isValidSidebarNavComponent(obj: any) {
+			return obj && obj.title !== undefined && obj.icon !== undefined && obj.content !== undefined;
+		}
+
+		if (pluginProps && isValidSidebarNavComponent(pluginProps)) {
+			window.MILLENNIUM_SIDEBAR_NAVIGATION_PANELS[pluginName] = pluginProps;
+		} else {
+			console.warn(
+				`Plugin ${pluginName} does not contain proper SidebarNavigation props and therefor can't be mounted by Millennium. Please ensure it has a title, icon, and content.`,
+			);
+			return;
+		}
 
 		/** If the current module is a client module, post message id=1 which calls the front_end_loaded method on the backend. */
 		if (MILLENNIUM_IS_CLIENT_MODULE) {
@@ -116,6 +134,7 @@ function InitializePlugins() {
 	 */
 	(window.PLUGIN_LIST ||= {})[pluginName] ||= {};
 	(window.MILLENNIUM_PLUGIN_SETTINGS_STORE ||= {})[pluginName] ||= {};
+	window.MILLENNIUM_SIDEBAR_NAVIGATION_PANELS ||= {};
 
 	/**
 	 * Accepted IPC message types from Millennium backend.
