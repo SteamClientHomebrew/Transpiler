@@ -189,7 +189,11 @@ function InitializePlugins() {
 	}
 
 	function WebkitInitializeIPC() {
-		SteamClient?.BrowserView?.RegisterForMessageFromParent((messageId: string, data: string) => {
+		if (typeof SteamClient === 'undefined') {
+			return;
+		}
+
+		SteamClient.BrowserView?.RegisterForMessageFromParent((messageId: string, data: string) => {
 			if (messageId !== IPCMessageId) {
 				return;
 			}
@@ -271,3 +275,4 @@ function InitializePlugins() {
 }
 
 export { ExecutePluginModule, InitializePlugins };
+

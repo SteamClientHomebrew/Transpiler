@@ -1,12 +1,15 @@
-import { Plugin, SourceDescription, TransformPluginContext } from 'rollup';
-import fs from 'fs';
-import path from 'path';
-import { createFilter } from '@rollup/pluginutils';
-import MagicString from 'magic-string';
 import * as parser from '@babel/parser';
-import traverse from '@babel/traverse';
-import * as glob from 'glob';
+import { createFilter } from '@rollup/pluginutils';
 import chalk from 'chalk';
+import fs from 'fs';
+import * as glob from 'glob';
+import MagicString from 'magic-string';
+import path from 'path';
+import { Plugin, SourceDescription, TransformPluginContext } from 'rollup';
+
+// Stupid fix because @babel/traverse exports a CommonJS module
+import _traverse from '@babel/traverse';
+const traverse = (_traverse as any).default as typeof _traverse;
 
 interface EmbedPluginOptions {
 	include?: string | RegExp | (string | RegExp)[];
