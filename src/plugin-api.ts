@@ -188,21 +188,37 @@ function InitializePlugins() {
 		});
 	}
 
-	function WebkitInitializeIPC() {
-		if (typeof SteamClient === 'undefined') {
-			return;
-		}
+	async function WebkitInitializeIPC() {
+		let attempts = 0;
+		const maxAttempts = 100; // 10 seconds with 100ms delay
 
-		SteamClient.BrowserView?.RegisterForMessageFromParent((messageId: string, data: string) => {
-			if (messageId !== IPCMessageId) {
-				return;
+		const checkSteamClient = async () => {
+			if (typeof SteamClient !== 'undefined') {
+				return true;
 			}
 
-			const payload = JSON.parse(data);
-			MillenniumStore.ignoreProxyFlag = true;
-			MillenniumStore.settingsStore[payload.name] = payload.value;
-			MillenniumStore.ignoreProxyFlag = false;
-		});
+			if (attempts >= maxAttempts) {
+				console.warn(`%c Millennium %c Failed to find SteamClient after ${maxAttempts * 100}ms`, 'background:rgb(37, 105, 184); color: white;', 'background: transparent;');
+				return false;
+			}
+
+			attempts++;
+			await new Promise(resolve => setTimeout(resolve, 100));
+			return await checkSteamClient();
+		};
+
+		if (await checkSteamClient()) {
+			SteamClient.BrowserView?.RegisterForMessageFromParent((messageId: string, data: string) => {
+				if (messageId !== IPCMessageId) {
+					return;
+				}
+
+				const payload = JSON.parse(data);
+				MillenniumStore.ignoreProxyFlag = true;
+				MillenniumStore.settingsStore[payload.name] = payload.value;
+				MillenniumStore.ignoreProxyFlag = false;
+			});
+		}
 	}
 
 	isClientModule ? ClientInitializeIPC() : WebkitInitializeIPC();
