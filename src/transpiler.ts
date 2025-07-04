@@ -161,7 +161,6 @@ async function GetPluginComponents(props: TranspilerProps): Promise<InputPluginO
 		resolve(),
 		json(),
 		constSysfsExpr(),
-		injectProcessEnv(envVars),
 		replace({
 			delimiters: ['', ''],
 			preventAssignment: true,
@@ -174,9 +173,14 @@ async function GetPluginComponents(props: TranspilerProps): Promise<InputPluginO
 		}),
 	];
 
+	if (envVars.length > 0) {
+		pluginList.push(injectProcessEnv(envVars));
+	}
+
 	if (props.bTersePlugin) {
 		pluginList.push(terser());
 	}
+
 	return pluginList;
 }
 
@@ -196,7 +200,6 @@ async function GetWebkitPluginComponents(props: TranspilerProps) {
 		commonjs(),
 		json(),
 		constSysfsExpr(),
-		injectProcessEnv(envVars),
 		replace({
 			delimiters: ['', ''],
 			preventAssignment: true,
@@ -209,6 +212,10 @@ async function GetWebkitPluginComponents(props: TranspilerProps) {
 			babelHelpers: 'bundled',
 		}),
 	];
+
+	if (envVars.length > 0) {
+		pluginList.push(injectProcessEnv(envVars));
+	}
 
 	pluginList = await MergePluginList(pluginList);
 
