@@ -189,25 +189,19 @@ function InitializePlugins() {
 	}
 
 	async function WebkitInitializeIPC() {
-		let attempts = 0;
-		const maxAttempts = 100; // 10 seconds with 100ms delay
+		let intervalId: NodeJS.Timeout | null = null;
+		const maxWaitTime = 10000; // 10 seconds
 
-		const checkSteamClient = async () => {
-			if (typeof SteamClient !== 'undefined') {
-				return true;
+		intervalId = setInterval(() => {
+			if (typeof SteamClient === 'undefined') {
+				return;
 			}
 
-			if (attempts >= maxAttempts) {
-				console.warn(`%c Millennium %c Failed to find SteamClient after ${maxAttempts * 100}ms`, 'background:rgb(37, 105, 184); color: white;', 'background: transparent;');
-				return false;
+			if (intervalId) {
+				clearInterval(intervalId);
+				intervalId = null;
 			}
 
-			attempts++;
-			await new Promise(resolve => setTimeout(resolve, 100));
-			return await checkSteamClient();
-		};
-
-		if (await checkSteamClient()) {
 			SteamClient.BrowserView?.RegisterForMessageFromParent((messageId: string, data: string) => {
 				if (messageId !== IPCMessageId) {
 					return;
@@ -218,7 +212,14 @@ function InitializePlugins() {
 				MillenniumStore.settingsStore[payload.name] = payload.value;
 				MillenniumStore.ignoreProxyFlag = false;
 			});
-		}
+		}, 100);
+
+		setTimeout(() => {
+			if (intervalId) {
+				clearInterval(intervalId);
+				console.warn('%c Millennium %c Failed to find SteamClient after 10000ms', 'background:rgb(37, 105, 184); color: white;', 'background: transparent;');
+			}
+		}, maxWaitTime);
 	}
 
 	isClientModule ? ClientInitializeIPC() : WebkitInitializeIPC();
