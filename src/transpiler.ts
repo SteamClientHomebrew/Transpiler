@@ -1,23 +1,24 @@
-import { OutputOptions, RollupOptions, rollup } from 'rollup';
-import json from '@rollup/plugin-json';
-import commonjs from '@rollup/plugin-commonjs';
-import replace from '@rollup/plugin-replace';
-import typescript from '@rollup/plugin-typescript';
-import resolve, { nodeResolve } from '@rollup/plugin-node-resolve';
-import terser from '@rollup/plugin-terser';
 import babel from '@rollup/plugin-babel';
-import nodePolyfills from 'rollup-plugin-polyfill-node';
+import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
+import resolve, { nodeResolve } from '@rollup/plugin-node-resolve';
+import replace from '@rollup/plugin-replace';
+import terser from '@rollup/plugin-terser';
+import typescript from '@rollup/plugin-typescript';
 import url from '@rollup/plugin-url';
+import { InputPluginOption, OutputBundle, OutputOptions, RollupOptions, rollup } from 'rollup';
+import nodePolyfills from 'rollup-plugin-polyfill-node';
+import { minify_sync } from 'terser';
 
 import scss from 'rollup-plugin-scss';
 import * as sass from 'sass';
 
 import chalk from 'chalk';
-import { Logger } from './logger';
 import fs from 'fs';
+import { Logger } from './logger';
 
-import injectProcessEnv from 'rollup-plugin-inject-process-env';
 import dotenv from 'dotenv';
+import injectProcessEnv from 'rollup-plugin-inject-process-env';
 import { ExecutePluginModule, InitializePlugins } from './plugin-api';
 import constSysfsExpr from './static-embed';
 
@@ -54,7 +55,7 @@ export interface TranspilerProps {
 const WrappedCallServerMethod = 'const __call_server_method__ = (methodName, kwargs) => Millennium.callServerMethod(pluginName, methodName, kwargs)';
 const WrappedCallable = 'const __wrapped_callable__ = (route) => MILLENNIUM_API.callable(__call_server_method__, route)';
 
-const ConstructFunctions = (parts: any) => {
+const ConstructFunctions = (parts: string[]): string => {
 	return parts.join('\n');
 };
 
@@ -63,8 +64,8 @@ function generate(code: string) {
 	return `let PluginEntryPointMain = function() { ${code} return millennium_main; };`;
 }
 
-function InsertMillennium(type: ComponentType, props: TranspilerProps) {
-	const generateBundle = (_: unknown, bundle: any) => {
+function InsertMillennium(type: ComponentType, props: TranspilerProps): InputPluginOption {
+	const generateBundle = (_: unknown, bundle: OutputBundle) => {
 		for (const fileName in bundle) {
 			if (bundle[fileName].type != 'chunk') {
 				continue;
@@ -72,7 +73,7 @@ function InsertMillennium(type: ComponentType, props: TranspilerProps) {
 
 			Logger.Info('millenniumAPI', 'Bundling into ' + ComponentType[type] + ' module... ' + chalk.green.bold('okay'));
 
-			bundle[fileName].code = ConstructFunctions([
+			let code = ConstructFunctions([
 				`const MILLENNIUM_IS_CLIENT_MODULE = ${type === ComponentType.Plugin ? 'true' : 'false'};`,
 				`const pluginName = "${props.strPluginInternalName}";`,
 				InitializePlugins.toString(),
@@ -83,6 +84,12 @@ function InsertMillennium(type: ComponentType, props: TranspilerProps) {
 				ExecutePluginModule.toString(),
 				ExecutePluginModule.name + '()',
 			]);
+
+			if (props.bTersePlugin) {
+				code = minify_sync(code).code ?? code;
+			}
+
+			bundle[fileName].code = code;
 		}
 	};
 
@@ -112,7 +119,7 @@ async function MergePluginList(plugins: any[]) {
 	return [...plugins, ...filteredCustomPlugins];
 }
 
-async function GetPluginComponents(props: TranspilerProps) {
+async function GetPluginComponents(props: TranspilerProps): Promise<InputPluginOption[]> {
 	let tsConfigPath = '';
 	const frontendDir = GetFrontEndDirectory();
 
@@ -154,7 +161,6 @@ async function GetPluginComponents(props: TranspilerProps) {
 		resolve(),
 		json(),
 		constSysfsExpr(),
-		injectProcessEnv(envVars),
 		replace({
 			delimiters: ['', ''],
 			preventAssignment: true,
@@ -167,9 +173,14 @@ async function GetPluginComponents(props: TranspilerProps) {
 		}),
 	];
 
+	if (envVars.length > 0) {
+		pluginList.push(injectProcessEnv(envVars));
+	}
+
 	if (props.bTersePlugin) {
 		pluginList.push(terser());
 	}
+
 	return pluginList;
 }
 
@@ -189,7 +200,6 @@ async function GetWebkitPluginComponents(props: TranspilerProps) {
 		commonjs(),
 		json(),
 		constSysfsExpr(),
-		injectProcessEnv(envVars),
 		replace({
 			delimiters: ['', ''],
 			preventAssignment: true,
@@ -202,6 +212,10 @@ async function GetWebkitPluginComponents(props: TranspilerProps) {
 			babelHelpers: 'bundled',
 		}),
 	];
+
+	if (envVars.length > 0) {
+		pluginList.push(injectProcessEnv(envVars));
+	}
 
 	pluginList = await MergePluginList(pluginList);
 
