@@ -74,7 +74,7 @@ function ExecutePluginModule() {
 	/** Expose the OnPluginConfigChange so it can be called externally */
 	MillenniumStore.OnPluginConfigChange = OnPluginConfigChange;
 
-	MILLENNIUM_BACKEND_IPC.postMessage(0, { pluginName: pluginName, methodName: '__builtins__.__millennium_plugin_settings_parser__' }).then((response: any) => {
+	MILLENNIUM_BACKEND_IPC.postMessage(0, { pluginName: pluginName, methodName: '__builtins__.__millennium_plugin_settings_parser__' }).then(async (response: any) => {
 		/**
 		 * __millennium_plugin_settings_parser__ will return false if the plugin has no settings.
 		 * If the plugin has settings, it will return a base64 encoded string.
@@ -101,7 +101,7 @@ function ExecutePluginModule() {
 		});
 
 		/** Run the rolled up plugins default exported function */
-		let pluginProps = PluginModule.default();
+		let pluginProps = await PluginModule.default();
 
 		function isValidSidebarNavComponent(obj: any) {
 			return obj && obj.title !== undefined && obj.icon !== undefined && obj.content !== undefined;
