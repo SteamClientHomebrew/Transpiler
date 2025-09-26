@@ -119,9 +119,9 @@ async function MergePluginList(plugins: any[]) {
 	return [...plugins, ...filteredCustomPlugins];
 }
 
-async function GetPluginComponents(props: TranspilerProps): Promise<InputPluginOption[]> {
+async function GetPluginComponents(pluginJson: any, props: TranspilerProps): Promise<InputPluginOption[]> {
 	let tsConfigPath = '';
-	const frontendDir = GetFrontEndDirectory();
+	const frontendDir = GetFrontEndDirectory(pluginJson);
 
 	if (frontendDir === '.' || frontendDir === './') {
 		tsConfigPath = './tsconfig.json';
@@ -136,21 +136,23 @@ async function GetPluginComponents(props: TranspilerProps): Promise<InputPluginO
 	Logger.Info('millenniumAPI', 'Loading tsconfig from ' + chalk.cyan.bold(tsConfigPath) + '... ' + chalk.green.bold('okay'));
 
 	let pluginList = [
+		typescript({
+			tsconfig: tsConfigPath,
+			compilerOptions: {
+				outDir: undefined,
+			},
+		}),
 		url({
 			include: ['**/*.gif', '**/*.webm', '**/*.svg'], // Add all non-JS assets you use
 			limit: 0, // Set to 0 to always copy the file instead of inlining as base64
 			fileName: '[hash][extname]', // Optional: custom output naming
 		}),
 		InsertMillennium(ComponentType.Plugin, props),
-		commonjs(),
-		nodePolyfills(),
 		nodeResolve({
 			browser: true,
 		}),
-		typescript({
-			include: ['**/*.ts', '**/*.tsx', 'src/**/*.ts', 'src/**/*.tsx'],
-			tsconfig: tsConfigPath,
-		}),
+		commonjs(),
+		nodePolyfills(),
 		scss({
 			output: false,
 			outputStyle: 'compressed',
@@ -158,7 +160,6 @@ async function GetPluginComponents(props: TranspilerProps): Promise<InputPluginO
 			watch: 'src/styles',
 			sass: sass,
 		}),
-		resolve(),
 		json(),
 		constSysfsExpr(),
 		replace({
@@ -223,19 +224,33 @@ async function GetWebkitPluginComponents(props: TranspilerProps) {
 	return pluginList;
 }
 
-const GetFrontEndDirectory = () => {
-	const pluginJsonPath = './plugin.json';
+const GetFrontEndDirectory = (pluginJson: any) => {
 	try {
-		return JSON.parse(fs.readFileSync(pluginJsonPath, 'utf8'))?.frontend ?? 'frontend';
+		return pluginJson?.frontend ?? 'frontend';
 	} catch (error) {
 		return 'frontend';
 	}
 };
 
-export const TranspilerPluginComponent = async (props: TranspilerProps) => {
+export const TranspilerPluginComponent = async (bIsMillennium: boolean, pluginJson: any, props: TranspilerProps) => {
+	const frontendDir = GetFrontEndDirectory(pluginJson);
+	console.log(chalk.greenBright.bold('config'), 'Frontend directory set to:', chalk.cyan.bold(frontendDir));
+
+	const frontendPlugins = await GetPluginComponents(pluginJson, props);
+
+	// Fix entry file path construction
+	let entryFile = '';
+	if (frontendDir === '.' || frontendDir === './' || frontendDir === '') {
+		entryFile = './index.tsx';
+	} else {
+		entryFile = `./${frontendDir}/index.tsx`;
+	}
+
+	console.log(chalk.greenBright.bold('config'), 'Entry file set to:', chalk.cyan.bold(entryFile));
+
 	const frontendRollupConfig: RollupOptions = {
-		input: `./${GetFrontEndDirectory()}/index.tsx`,
-		plugins: await GetPluginComponents(props),
+		input: entryFile,
+		plugins: frontendPlugins,
 		context: 'window',
 		external: (id) => {
 			if (id === '@steambrew/webkit') {
@@ -249,7 +264,7 @@ export const TranspilerPluginComponent = async (props: TranspilerProps) => {
 		},
 		output: {
 			name: 'millennium_main',
-			file: '.millennium/Dist/index.js',
+			file: bIsMillennium ? '../../build/frontend.bin' : '.millennium/Dist/index.js',
 			globals: {
 				react: 'window.SP_REACT',
 				'react-dom': 'window.SP_REACTDOM',

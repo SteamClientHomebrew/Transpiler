@@ -23,18 +23,19 @@ const CheckModuleUpdates = async () => {
 
 const StartCompilerModule = () => {
 	const parameters = ValidateParameters(process.argv.slice(2));
+	const bIsMillennium = parameters.isMillennium || false;
 	const bTersePlugin = parameters.type == BuildType.ProdBuild;
 
 	console.log(chalk.greenBright.bold('config'), 'Building target:', parameters.targetPlugin, 'with type:', BuildType[parameters.type], 'minify:', bTersePlugin, '...');
 
-	ValidatePlugin(parameters.targetPlugin)
+	ValidatePlugin(bIsMillennium, parameters.targetPlugin)
 		.then((json: any) => {
 			const props: TranspilerProps = {
 				bTersePlugin: bTersePlugin,
 				strPluginInternalName: json?.name,
 			};
 
-			TranspilerPluginComponent(props);
+			TranspilerPluginComponent(bIsMillennium, json, props);
 		})
 
 		/**

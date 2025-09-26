@@ -2,11 +2,24 @@ import chalk from 'chalk';
 import path from 'path';
 import { existsSync, readFile } from 'fs';
 
-export const ValidatePlugin = (target: string): Promise<any> => {
+export const ValidatePlugin = (bIsMillennium: boolean, target: string): Promise<any> => {
 	return new Promise<any>((resolve, reject) => {
 		if (!existsSync(target)) {
 			console.error(chalk.red.bold(`\n[-] --target [${target}] `) + chalk.red('is not a valid system path'));
 			reject();
+			return;
+		}
+
+		if (bIsMillennium) {
+			console.log(chalk.green.bold('\n[+] Using Millennium internal build configuration'));
+
+			resolve({
+				name: 'core',
+				common_name: 'Millennium',
+				description: 'An integrated plugin that provides core platform functionality.',
+				useBackend: false,
+				frontend: '.',
+			});
 			return;
 		}
 

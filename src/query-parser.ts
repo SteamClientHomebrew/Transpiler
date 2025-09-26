@@ -29,11 +29,13 @@ export enum BuildType {
 export interface ParameterProps {
 	type: BuildType;
 	targetPlugin: string; // path
+	isMillennium?: boolean;
 }
 
 export const ValidateParameters = (args: Array<string>): ParameterProps => {
 	let typeProp: BuildType = BuildType.DevBuild,
-		targetProp: string = process.cwd();
+		targetProp: string = process.cwd(),
+		isMillennium: boolean = false;
 
 	if (args.includes('--help')) {
 		PrintParamHelp();
@@ -73,10 +75,15 @@ export const ValidateParameters = (args: Array<string>): ParameterProps => {
 
 			targetProp = args[i + 1];
 		}
+
+		if (args[i] == '--millennium-internal') {
+			isMillennium = true;
+		}
 	}
 
 	return {
 		type: typeProp,
 		targetPlugin: targetProp,
+		isMillennium: isMillennium,
 	};
 };
