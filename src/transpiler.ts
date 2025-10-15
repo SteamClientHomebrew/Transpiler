@@ -260,7 +260,7 @@ export const TranspilerPluginComponent = async (bIsMillennium: boolean, pluginJs
 				process.exit(1);
 			}
 
-			return id === '@steambrew/client' || id === 'react' || id === 'react-dom' || id === 'react-dom/client';
+			return id === '@steambrew/client' || id === 'react' || id === 'react-dom' || id === 'react-dom/client' || id === 'react/jsx-runtime';
 		},
 		output: {
 			name: 'millennium_main',
