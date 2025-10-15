@@ -269,6 +269,7 @@ export const TranspilerPluginComponent = async (bIsMillennium: boolean, pluginJs
 				react: 'window.SP_REACT',
 				'react-dom': 'window.SP_REACTDOM',
 				'react-dom/client': 'window.SP_REACTDOM',
+				'react/jsx-runtime': 'SP_JSX_FACTORY',
 				'@steambrew/client': 'window.MILLENNIUM_API',
 			},
 			exports: 'named',
