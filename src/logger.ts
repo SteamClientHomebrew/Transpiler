@@ -5,6 +5,10 @@ const Logger = {
 		console.log(chalk.magenta.bold(name), ...LogMessage);
 	},
 
+	Config: (...LogMessage: any) => {
+		console.log(chalk.greenBright.bold('config'), ...LogMessage);
+	},
+
 	Warn: (...LogMessage: any) => {
 		console.log(chalk.yellow.bold('**'), ...LogMessage);
 	},
