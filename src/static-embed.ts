@@ -176,7 +176,7 @@ export default function constSysfsExpr(options: EmbedPluginOptions = {}): Plugin
 							}
 
 							try {
-								const currentLocString = node.loc?.start ? ` at ${id}:${node.loc.start.line}:${node.loc.start.column}` : ` in ${id}`;
+								const currentLocString = node.loc?.start ? ` at ${chalk.cyan.bold(id)}:${node.loc.start.line}:${node.loc.start.column}` : ` in ${id}`;
 
 								const searchBasePath = callOptions.basePath
 									? path.isAbsolute(callOptions.basePath)
@@ -197,7 +197,11 @@ export default function constSysfsExpr(options: EmbedPluginOptions = {}): Plugin
 									fs.statSync(path.resolve(searchBasePath, pathOrPattern)).isFile()
 								) {
 									const singleFilePath = path.resolve(searchBasePath, pathOrPattern);
-									Log(`Mode: Single file (first argument "${pathOrPattern}" resolved to "${singleFilePath}" relative to "${searchBasePath}")`);
+									Log(
+										`Mode: Single file (first argument "${chalk.cyan.bold(pathOrPattern)}" resolved to "${chalk.cyan.bold(
+											singleFilePath,
+										)}" relative to "${chalk.cyan.bold(searchBasePath)}")`,
+									);
 
 									try {
 										const rawContent: string | Buffer = fs.readFileSync(singleFilePath, callOptions.encoding);
@@ -209,6 +213,9 @@ export default function constSysfsExpr(options: EmbedPluginOptions = {}): Plugin
 										};
 										embeddedContent = JSON.stringify(fileInfo);
 										embeddedCount = 1;
+
+										this.addWatchFile(singleFilePath);
+
 										Log(`Embedded 1 specific file for call${currentLocString}`);
 									} catch (fileError: unknown) {
 										let message = String(fileError instanceof Error ? fileError.message : fileError ?? 'Unknown file read error');
@@ -236,6 +243,8 @@ export default function constSysfsExpr(options: EmbedPluginOptions = {}): Plugin
 												filePath: fullPath,
 												fileName: path.relative(searchBasePath, fullPath),
 											});
+
+											this.addWatchFile(fullPath);
 										} catch (fileError: unknown) {
 											let message = String(fileError instanceof Error ? fileError.message : fileError ?? 'Unknown file read error');
 											this.warn(`Error reading file ${fullPath}: ${message}`);

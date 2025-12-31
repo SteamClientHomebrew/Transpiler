@@ -1,9 +1,10 @@
 import chalk from 'chalk';
-import path from 'path';
 import { existsSync, readFile } from 'fs';
+import path from 'path';
+import { PluginJson } from './plugin-json';
 
-export const ValidatePlugin = (bIsMillennium: boolean, target: string): Promise<any> => {
-	return new Promise<any>((resolve, reject) => {
+export const ValidatePlugin = (bIsMillennium: boolean, target: string): Promise<PluginJson> => {
+	return new Promise<PluginJson>((resolve, reject) => {
 		if (!existsSync(target)) {
 			console.error(chalk.red.bold(`\n[-] --target [${target}] `) + chalk.red('is not a valid system path'));
 			reject();

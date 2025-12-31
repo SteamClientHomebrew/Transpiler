@@ -5,20 +5,12 @@ import { Logger } from './logger';
  * @brief print the parameter list to the stdout
  */
 export const PrintParamHelp = () => {
-	console.log(
-		'millennium-ttc parameter list:' +
-			'\n\t' +
-			chalk.magenta('--help') +
-			': display parameter list' +
-			'\n\t' +
-			chalk.bold.red('--build') +
-			': ' +
-			chalk.bold.red('(required)') +
-			': build type [dev, prod] (prod minifies code)' +
-			'\n\t' +
-			chalk.magenta('--target') +
-			': path to plugin, default to cwd',
-	);
+	console.log(`
+millennium-ttc parameter list:
+	${chalk.magenta('--help')}: display parameter list
+	${chalk.bold.red('--build')}: ${chalk.bold.red('(required)')}: build type [dev, prod] (prod minifies code)
+	${chalk.magenta('--target')}: path to plugin, default to cwd
+	${chalk.magenta('--watch')}: enable watch mode for continuous rebuilding`);
 };
 
 export enum BuildType {
@@ -30,12 +22,14 @@ export interface ParameterProps {
 	type: BuildType;
 	targetPlugin: string; // path
 	isMillennium?: boolean;
+	watch?: boolean;
 }
 
 export const ValidateParameters = (args: Array<string>): ParameterProps => {
 	let typeProp: BuildType = BuildType.DevBuild,
 		targetProp: string = process.cwd(),
-		isMillennium: boolean = false;
+		isMillennium: boolean = false,
+		watch: boolean = false;
 
 	if (args.includes('--help')) {
 		PrintParamHelp();
@@ -67,7 +61,7 @@ export const ValidateParameters = (args: Array<string>): ParameterProps => {
 			}
 		}
 
-		if (args[i] == '--target') {
+		if (args[i] === '--target') {
 			if (args[i + 1] === undefined) {
 				Logger.Error('--target parameter must be preceded by system path');
 				process.exit();
@@ -76,8 +70,12 @@ export const ValidateParameters = (args: Array<string>): ParameterProps => {
 			targetProp = args[i + 1];
 		}
 
-		if (args[i] == '--millennium-internal') {
+		if (args[i] === '--millennium-internal') {
 			isMillennium = true;
+		}
+
+		if (args[i] === '--watch') {
+			watch = true;
 		}
 	}
 
@@ -85,5 +83,6 @@ export const ValidateParameters = (args: Array<string>): ParameterProps => {
 		type: typeProp,
 		targetPlugin: targetProp,
 		isMillennium: isMillennium,
+		watch: watch,
 	};
 };

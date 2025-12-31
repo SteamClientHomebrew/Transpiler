@@ -5,13 +5,13 @@
  * - typescript transpiler
  * - rollup configurator
  */
-import { BuildType, ValidateParameters } from './query-parser';
-import { CheckForUpdates } from './version-control';
-import { ValidatePlugin } from './check-health';
-import { TranspilerPluginComponent, TranspilerProps } from './transpiler';
 import { performance } from 'perf_hooks';
-import chalk from 'chalk';
-// import { Logger } from './Logger'
+import { ValidatePlugin } from './check-health';
+import { Logger } from './logger';
+import { PluginJson } from './plugin-json';
+import { BuildType, ValidateParameters } from './query-parser';
+import { TranspilerPluginComponent, TranspilerProps } from './transpiler';
+import { CheckForUpdates } from './version-control';
 
 declare global {
 	var PerfStartTime: number;
@@ -25,17 +25,20 @@ const StartCompilerModule = () => {
 	const parameters = ValidateParameters(process.argv.slice(2));
 	const bIsMillennium = parameters.isMillennium || false;
 	const bTersePlugin = parameters.type == BuildType.ProdBuild;
+	const bWatchMode = parameters.watch || false;
 
-	console.log(chalk.greenBright.bold('config'), 'Building target:', parameters.targetPlugin, 'with type:', BuildType[parameters.type], 'minify:', bTersePlugin, '...');
+	Logger.Config('Building target:', parameters.targetPlugin, 'with type:', BuildType[parameters.type], 'minify:', bTersePlugin, '...');
 
 	ValidatePlugin(bIsMillennium, parameters.targetPlugin)
-		.then((json: any) => {
+		.then((json: PluginJson) => {
 			const props: TranspilerProps = {
-				bTersePlugin: bTersePlugin,
-				strPluginInternalName: json?.name,
+				bTersePlugin,
+				strPluginInternalName: json.name,
+				bWatchMode,
+				bIsMillennium,
 			};
 
-			TranspilerPluginComponent(bIsMillennium, json, props);
+			TranspilerPluginComponent(json, props);
 		})
 
 		/**

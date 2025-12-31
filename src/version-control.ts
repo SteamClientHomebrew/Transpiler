@@ -1,7 +1,6 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { readFile } from 'fs/promises';
-import { dirname } from 'path';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { Logger } from './logger';
 
 export const CheckForUpdates = async (): Promise<boolean> => {
@@ -12,7 +11,7 @@ export const CheckForUpdates = async (): Promise<boolean> => {
 		fetch('https://registry.npmjs.org/@steambrew/ttc')
 			.then((response) => response.json())
 			.then((json) => {
-				if (json?.['dist-tags']?.latest != packageJson.version) {
+				if (json?.['dist-tags']?.latest.replace(/\./g, '') > packageJson.version.replace(/\./g, '')) {
 					Logger.Tree('versionMon', `@steambrew/ttc@${packageJson.version} requires update to ${json?.['dist-tags']?.latest}`, {
 						cmd: `run "npm install @steambrew/ttc@${json?.['dist-tags']?.latest}" to get latest updates!`,
 					});
