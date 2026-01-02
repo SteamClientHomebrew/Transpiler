@@ -52,8 +52,24 @@ export interface TranspilerProps {
 	strPluginInternalName: string;
 }
 
+declare const MILLENNIUM_API: {
+	callable: (fn: Function, route: string) => any;
+	__INTERNAL_CALL_WEBKIT_METHOD__: (pluginName: string, methodName: string, kwargs: any) => any;
+};
+
+declare const __call_server_method__: (methodName: string, kwargs: any) => any;
 const WrappedCallServerMethod = 'const __call_server_method__ = (methodName, kwargs) => Millennium.callServerMethod(pluginName, methodName, kwargs)';
-const WrappedCallable = 'const __wrapped_callable__ = (route) => MILLENNIUM_API.callable(__call_server_method__, route)';
+
+function __wrapped_callable__(route: string) {
+	if (route.startsWith('webkit:')) {
+		return MILLENNIUM_API.callable(
+			(methodName: string, kwargs: any) => MILLENNIUM_API.__INTERNAL_CALL_WEBKIT_METHOD__(pluginName, methodName, kwargs),
+			route.replace(/^webkit:/, ''),
+		);
+	}
+
+	return MILLENNIUM_API.callable(__call_server_method__, route);
+}
 
 const ConstructFunctions = (parts: string[]): string => {
 	return parts.join('\n');
@@ -79,7 +95,7 @@ function InsertMillennium(type: ComponentType, props: TranspilerProps): InputPlu
 				InitializePlugins.toString(),
 				InitializePlugins.name + '()',
 				WrappedCallServerMethod,
-				WrappedCallable,
+				__wrapped_callable__.toString(),
 				generate(bundle[fileName].code),
 				ExecutePluginModule.toString(),
 				ExecutePluginModule.name + '()',
@@ -206,6 +222,7 @@ async function GetWebkitPluginComponents(props: TranspilerProps) {
 			preventAssignment: true,
 			'Millennium.callServerMethod': `__call_server_method__`,
 			'webkit.callable': `__wrapped_callable__`,
+			'webkit.Millennium.exposeObj(': 'webkit.Millennium.exposeObj(exports, ',
 			'client.BindPluginSettings()': 'client.BindPluginSettings(pluginName)',
 		}),
 		babel({
